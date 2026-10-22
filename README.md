@@ -22,7 +22,7 @@ It works in two places:
 - **VS Code chat:** "Fusion (multi model)" appears in the chat model picker, next to the other models.
 - **Claude Code:** a local Anthropic-compatible gateway adds "Fusion (multi model)" to Claude Code's model menu, in the VS Code extension or the CLI.
 
-Fusion is inspired by GitHub's [Project HydraFusion](https://github.blog/ai-and-ml/github-copilot/project-hydrafusion-frontier-quality-via-multi-model-orchestration/) research preview. It is an independent project, not affiliated with GitHub or Microsoft, and it has not been benchmarked. The figures in that post describe GitHub's system, not this one.
+Fusion is inspired by GitHub's [Project HydraFusion](https://github.blog/ai-and-ml/github-copilot/project-hydrafusion-frontier-quality-via-multi-model-orchestration/) research preview. It is an independent project, not affiliated with Anthropic, GitHub or Microsoft, and it has not been benchmarked. The figures in that post describe GitHub's system, not this one.
 
 ## How a task runs
 
