@@ -13,6 +13,38 @@
 
 To undo step 3, run **Fusion: Use Fusion in Claude Code…** → **Remove**.
 
+## Run it on your Claude plan (Claude Code backend, no API key)
+
+`fusion cc` runs the same routing and workflows through the Claude Code CLI you already use, so every model call is a headless Claude Code run on your Claude Code login (your Claude plan's usage, not an API bill). It is a command-line tool for scripts and automations; nothing changes in your editor or your other Claude Code sessions.
+
+```bash
+git clone https://github.com/KyleSau/claude-fusion && cd claude-fusion && npm install
+node dist/cli.js cc "Add a --dry-run flag to scripts/deploy.sh and test it" --cwd ~/my-repo -v
+```
+
+Requirements: Node 20+, and Claude Code installed and signed in (`claude` on your PATH, or the VS Code extension; `--claude <path>` points at another build).
+
+What happens:
+
+1. **Route.** A tool-less Haiku call (or `--router heuristic`, or `--difficulty easy|medium|hard`) rates the task.
+2. **Pick a workflow** from the same policy table as the API version, per `--objective fast|balanced|quality`:
+   - **single:** one model does it.
+   - **cascade:** a cheaper model does it; a tool-less gate reads the task, a condensed log of every tool call and result, and the answer; if it rejects, a stronger model resumes the same Claude Code session (all context kept) and finishes.
+   - **critique:** a model does it; an isolated, tool-less reviewer reads the work; the drafter revises once.
+   - **guarded** (new, for work with side effects): add `--side-effects --guard-tools <tools>`. The planner may read anything but the listed tools are locked; it writes an exact action plan (`ACTIONS: n`, then each action with its exact content). A tool-less reviewer on a different tier approves it or sends it back once. Only then does a cheaper executor carry out exactly the approved plan. Nothing irreversible happens before review, a plan the reviewer still rejects is never executed, and `ACTIONS: 0` ends the task after one call.
+3. **Account for everything.** `--json` / `--json-out file` reports every leg: role, model, effort, time, estimated cost, session id, gate or review verdict.
+
+```bash
+# An agent that answers email, but only after its plan is reviewed:
+node dist/cli.js cc --prompt-file triage.md --side-effects \
+  --guard-tools mcp__claude_ai_Gmail__send_message,mcp__claude_ai_Gmail__reply \
+  --objective quality --json-out outcome.json -v
+```
+
+Useful options: `--tiers fast=haiku,balanced=sonnet,frontier=opus` (any Claude Code model alias or id), `--append-system-file rules.md` (shared rules for every working leg), `--chrome` (Claude in Chrome for working legs), `--max-usd 5` (skip optional legs once a task's estimated cost reaches it), `--gate-threshold 0.6`, `--leg-timeout-min 20`. `node dist/cli.js cc --help` lists everything.
+
+Compared with HydraFusion: the same three patterns, capability-scored routing, isolated tool-less reviewers, held drafts, per-leg timeouts and full cost accounting. Added here: the guarded pattern, which brings "never apply a change that failed review" to email, calendars, forms and deploys; escalation that resumes the drafter's session instead of starting over; early exit when a plan has nothing to do; and the option to run it all on a Claude plan. One difference: HydraFusion's critic comes from another model family, while `fusion cc` reviews with a different Claude tier in a fresh, tool-less context.
+
 ## What it does
 
 Fusion is a multi-model orchestrator for Claude. A fast router reads each new task and chooses between Claude Haiku 5.5, Sonnet 5.5 and Opus 5.5, and between three workflows: one model answering directly, a cheap draft checked by a quality gate, or a draft reviewed by an independent critic and revised once. You see one answer. Drafts that were rejected or revised never reach your chat.

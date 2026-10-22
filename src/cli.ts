@@ -7,6 +7,7 @@ import { oneLineSummary, textReport } from './core/report';
 import type { Objective, Pattern, TurnSink } from './core/types';
 import { DEFAULT_PORT, DEFAULT_UPSTREAM, Gateway } from './gateway/server';
 import { createRuntime } from './runtime';
+import { ccMain } from './cc/cli';
 import { version } from '../package.json';
 
 const HELP = `fusion ${version} — multi-model orchestration for Claude
@@ -16,6 +17,8 @@ Usage
   fusion ask "<prompt>" [--objective fast|balanced|quality] [--pattern single|cascade|critique]
   fusion route "<prompt>" [--agentic]                     Show how a request would be routed (one router call)
   fusion models                                           Show the model pool and prices
+  fusion cc "<task>" [--side-effects] [--objective ...]   Run a task as a multi-model workflow on Claude Code
+                                                          (your Claude Code login, no API key); fusion cc --help
 
 Environment
   FUSION_ANTHROPIC_API_KEY, ANTHROPIC_API_KEY   API key for Fusion's own model calls
@@ -61,6 +64,8 @@ function runtime(cfg: FusionConfig, verbose: boolean) {
 }
 
 async function main(): Promise<number> {
+  // Claude Code backend: no API key, no gateway; its own flags.
+  if (process.argv[2] === 'cc') return ccMain(process.argv.slice(3));
   const { values, positionals } = parseArgs({
     allowPositionals: true,
     options: {

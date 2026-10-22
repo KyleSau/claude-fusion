@@ -41,7 +41,7 @@ export const POLICY: Record<Objective, Record<Difficulty, Spec>> = {
 };
 
 /** Medium tasks that are mostly debugging or reasoning get a reviewer instead of a gate. */
-const REVIEWED_MEDIUM: Record<Objective, Spec | undefined> = {
+export const REVIEWED_MEDIUM: Record<Objective, Spec | undefined> = {
   fast: undefined,
   balanced: { pattern: 'critique', solver: ['balanced', 'high'], critic: ['frontier', 'medium'] },
   quality: undefined,
