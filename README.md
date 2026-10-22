@@ -1,6 +1,6 @@
 <p align="center"><img src="media/icon.png" width="96" alt="Fusion"></p>
 
-# Fusion
+# Claude Fusion
 
 **Pick “Fusion (multi model)” in your model picker, and each task runs on the cheapest Claude workflow likely to get it right.**
 
@@ -82,7 +82,7 @@ Start a new Claude Code session and pick **Fusion (multi model)** from the model
 **From a terminal:** run the gateway yourself and add the same variables to the `env` block of `~/.claude/settings.json`:
 
 ```bash
-git clone https://github.com/KyleSau/fusion && cd fusion && npm install
+git clone https://github.com/KyleSau/claude-fusion && cd claude-fusion && npm install
 ANTHROPIC_API_KEY=sk-ant-... node dist/cli.js gateway        # listens on 127.0.0.1:4545
 ```
 

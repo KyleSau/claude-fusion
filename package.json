@@ -1,6 +1,6 @@
 {
   "name": "fusion",
-  "displayName": "Fusion — multi-model orchestration for Claude",
+  "displayName": "Claude Fusion — multi-model orchestration for Claude",
   "description": "Adds “Fusion (multi model)” to the chat model picker. Each task is routed across Claude Haiku, Sonnet and Opus and run as a single call, a cascade with a quality gate, or a draft–critique–revise workflow.",
   "version": "0.1.1",
   "publisher": "kylesau",
@@ -8,11 +8,11 @@
   "license": "MIT",
   "repository": {
     "type": "git",
-    "url": "https://github.com/KyleSau/fusion.git"
+    "url": "https://github.com/KyleSau/claude-fusion.git"
   },
-  "homepage": "https://github.com/KyleSau/fusion#readme",
+  "homepage": "https://github.com/KyleSau/claude-fusion#readme",
   "bugs": {
-    "url": "https://github.com/KyleSau/fusion/issues"
+    "url": "https://github.com/KyleSau/claude-fusion/issues"
   },
   "keywords": [
     "claude",
