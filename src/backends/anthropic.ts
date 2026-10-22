@@ -19,6 +19,19 @@ export interface AnthropicBackendOptions {
   maxRetries?: number;
 }
 
+/**
+ * Fusion has no key of its own. Deliberately not an API authentication error: a client such as
+ * Claude Code would take that to mean its own login failed.
+ */
+export class MissingCredentialsError extends Error {
+  constructor() {
+    super(
+      'Fusion needs an Anthropic API key for its own model calls. In VS Code run "Fusion: Set Anthropic API Key"; for the command-line gateway set ANTHROPIC_API_KEY. A claude.ai login cannot be used for these calls.',
+    );
+    this.name = 'MissingCredentialsError';
+  }
+}
+
 const BETA_THINKING_BINDING = 'thinking-binding-controls-2026-08-01';
 const BETA_DISPLAY_UPDATES = 'thinking-display-updates-2026-08-18';
 const BETA_SERVER_FALLBACK = 'server-side-fallback-2026-07-01';
@@ -143,12 +156,7 @@ export class AnthropicBackend implements Backend {
     const key = `${c.apiKey ?? ''}\u0000${c.authToken ?? ''}\u0000${this.opts.baseURL ?? ''}`;
     if (!this.client || key !== this.clientKey) {
       if (!c.apiKey && !c.authToken && !this.opts.allowDefaultCredentials) {
-        throw new Anthropic.AuthenticationError(
-          401,
-          { type: 'error', error: { type: 'authentication_error', message: 'Fusion has no Anthropic API key configured.' } },
-          'Fusion has no Anthropic API key configured. Set one with "Fusion: Set Anthropic API Key" (VS Code) or ANTHROPIC_API_KEY (CLI).',
-          new Headers(),
-        );
+        throw new MissingCredentialsError();
       }
       this.client = new Anthropic({
         ...(c.apiKey ? { apiKey: c.apiKey } : {}),

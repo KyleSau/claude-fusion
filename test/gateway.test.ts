@@ -130,12 +130,20 @@ describe('pass-through', () => {
       messages: [{ role: 'user' as const, content: 'hello' }],
       thinking: { type: 'adaptive' as const },
     };
-    const message = await client.beta.messages.create(body);
+    const message = await client.beta.messages.create(body, {
+      headers: { 'user-agent': 'claude-cli/9.9.9 (external, cli)', 'x-app': 'cli', 'x-claude-code-session-id': 'session-1', 'anthropic-beta': 'oauth-2025-04-20,claude-code-20250219' },
+    });
     expect(message.content[0]).toMatchObject({ text: 'mock reply from claude-opus-5-5' });
     const [upstream] = mock.requests;
     expect(upstream.url).toBe('/v1/messages?beta=true');
     expect(upstream.body).toEqual(body);
     expect(upstream.auth).toBe('bearer');
+    expect(upstream.headers).toMatchObject({
+      'user-agent': 'claude-cli/9.9.9 (external, cli)',
+      'x-app': 'cli',
+      'x-claude-code-session-id': 'session-1',
+      'anthropic-beta': 'oauth-2025-04-20,claude-code-20250219',
+    });
   });
 
   it('forwards upstream errors unchanged', async () => {
@@ -149,6 +157,36 @@ describe('pass-through', () => {
     const page = await client.models.list();
     const ids = page.data.map((m) => m.id);
     expect(ids).toEqual(expect.arrayContaining(['fusion', 'fusion-fast', 'fusion-quality', 'claude-opus-5-5']));
+  });
+});
+
+describe('without an API key', () => {
+  it('explains the missing key with a 400, not an authentication error the client would blame on its own login', async () => {
+    const { orchestrator } = createRuntime({ config: () => resolveConfig(), credentials: () => undefined, upstreamURL: mock.url, maxRetries: 0, log: silent });
+    const g = new Gateway({
+      orchestrator,
+      port: 0,
+      upstreamURL: mock.url,
+      defaultCredentials: () => undefined,
+      defaultObjective: () => 'balanced',
+      countTokensModel: () => 'claude-sonnet-5-5',
+      log: silent,
+    });
+    const url = await g.start();
+    try {
+      // Signed in the way Claude Code is with a claude.ai login: an OAuth bearer token.
+      const oauthClient = new Anthropic({ apiKey: null, authToken: 'sk-ant-oat01-login', baseURL: url, maxRetries: 0 });
+      const err = await oauthClient.messages.create({ model: 'fusion', max_tokens: 10, messages: [{ role: 'user', content: 'hi' }] }).catch((e) => e);
+      expect(err).toBeInstanceOf(Anthropic.BadRequestError);
+      expect(err.message).toContain('Fusion: Set Anthropic API Key');
+      expect(mock.requests).toHaveLength(0); // the login was not used for Fusion's own calls
+      // Other models still pass through with the client's own login.
+      const passthrough = await oauthClient.messages.create({ model: 'claude-haiku-5-5', max_tokens: 10, messages: [{ role: 'user', content: 'hi' }] });
+      expect(passthrough.content[0]).toMatchObject({ text: 'mock reply from claude-haiku-5-5' });
+      expect(mock.requests[0].auth).toBe('bearer(oauth)');
+    } finally {
+      await g.stop();
+    }
   });
 });
 

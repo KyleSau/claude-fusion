@@ -95,7 +95,7 @@ describe('validated routing', () => {
   });
 
   it('fails clearly when nothing is available', () => {
-    expect(() => plan(decision('easy'), 'balanced', true, resolveConfig(), () => false)).toThrow(/no available model/);
+    expect(() => plan(decision('easy'), 'balanced', true, resolveConfig(), () => false)).toThrow(/no model it can call.*API key/);
   });
 
   it('honours a forced pattern', () => {

@@ -66,7 +66,7 @@ ANTHROPIC_CUSTOM_MODEL_OPTION_DESCRIPTION=Routes each task across Haiku, Sonnet 
 CLAUDE_CODE_GATEWAY_HINT_HEADERS=1
 ```
 
-Start a new Claude Code session and pick **Fusion (multi model)** from the model menu, or type `/model fusion`. The same command can remove these entries again.
+Start a new Claude Code session and pick **Fusion (multi model)** from the model menu, or type `/model fusion`. While these entries are set, the extension keeps the gateway running, so Claude Code always has something to connect to. The same command removes the entries again.
 
 **From a terminal:** run the gateway yourself and add the same variables to the `env` block of `~/.claude/settings.json`:
 

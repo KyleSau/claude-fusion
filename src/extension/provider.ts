@@ -1,5 +1,7 @@
 import Anthropic from '@anthropic-ai/sdk';
 import * as vscode from 'vscode';
+import { MissingCredentialsError } from '../backends/anthropic';
+import { NoAvailableModelError } from '../core/policy';
 import { isCancellation } from '../core/bounded';
 import type { ModelRegistry } from '../core/models';
 import { errorMessage, type Orchestrator } from '../core/orchestrator';
@@ -136,6 +138,7 @@ function estimateTokens(chars: number): number {
 }
 
 function friendlyError(err: unknown): string {
+  if (err instanceof MissingCredentialsError || err instanceof NoAvailableModelError) return err.message;
   if (err instanceof Anthropic.AuthenticationError) {
     return 'Fusion: the Anthropic API rejected the API key. Update it with "Fusion: Set Anthropic API Key".';
   }

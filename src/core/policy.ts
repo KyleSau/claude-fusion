@@ -49,6 +49,16 @@ const REVIEWED_MEDIUM: Record<Objective, Spec | undefined> = {
 
 const TIERS: Tier[] = ['fast', 'balanced', 'frontier'];
 
+/** No model in the pool can be called: usually no API key yet. A configuration problem, never worth a retry. */
+export class NoAvailableModelError extends Error {
+  constructor(role: string, wanted: string) {
+    super(
+      `Fusion has no model it can call for the ${role} role (wanted ${wanted}). If you have not set one yet, add an Anthropic API key: "Fusion: Set Anthropic API Key" in VS Code, or ANTHROPIC_API_KEY for the command-line gateway.`,
+    );
+    this.name = 'NoAvailableModelError';
+  }
+}
+
 function above(t: Tier): Tier {
   return TIERS[Math.min(TIERS.length - 1, TIERS.indexOf(t) + 1)];
 }
@@ -108,7 +118,7 @@ export function planFor(
         return { model: id, effort };
       }
     }
-    throw new Error(`Fusion: no available model for the ${role} role (wanted ${wanted}). Check your API key and model settings.`);
+    throw new NoAvailableModelError(role, wanted);
   };
 
   const plan: Plan = {

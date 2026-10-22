@@ -8,7 +8,7 @@ import { markdownReport } from '../core/report';
 import type { Tier } from '../core/types';
 import { DEFAULT_UPSTREAM, Gateway } from '../gateway/server';
 import { createRuntime } from '../runtime';
-import { setupClaudeCode } from './claudeCode';
+import { CLAUDE_CODE_ENV_SETTING, claudeCodeUsesGateway, setupClaudeCode } from './claudeCode';
 import { FusionChatProvider, VENDOR } from './provider';
 import { readSettings } from './settings';
 import { FusionStatus } from './status';
@@ -94,12 +94,16 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
     status.update();
   };
   context.subscriptions.push({ dispose: () => void stopGateway() });
-  if (settings.gateway.autoStart) {
+  // Run the gateway whenever something depends on it: the setting, or Claude Code in VS Code
+  // being pointed at it (otherwise Claude Code could not connect at all).
+  const ensureGateway = () => {
+    if (gateway?.address || !(settings.gateway.autoStart || claudeCodeUsesGateway(settings.gateway.port))) return;
     startGateway().catch((err) => {
       log.error(`could not start the gateway: ${errorMessage(err)}`);
       vscode.window.showWarningMessage(`Fusion could not start its gateway on port ${settings.gateway.port}: ${errorMessage(err)}`);
     });
-  }
+  };
+  ensureGateway();
 
   // Models other extensions provide can join the pool as `vscode:<vendor>/<id>`.
   let discovered = '';
@@ -125,6 +129,7 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
 
   context.subscriptions.push(
     vscode.workspace.onDidChangeConfiguration(async (e) => {
+      if (e.affectsConfiguration(CLAUDE_CODE_ENV_SETTING)) ensureGateway();
       if (!e.affectsConfiguration('fusion')) return;
       const previous = settings;
       settings = readSettings();
@@ -136,6 +141,7 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
         await stopGateway();
         await startGateway().catch((err) => log.error(`could not restart the gateway: ${errorMessage(err)}`));
       }
+      ensureGateway();
       if (previous.baseUrl !== settings.baseUrl) {
         const reload = await vscode.window.showInformationMessage('Reload the window to use the new Anthropic base URL.', 'Reload');
         if (reload) await vscode.commands.executeCommand('workbench.action.reloadWindow');

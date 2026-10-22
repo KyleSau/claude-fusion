@@ -2,7 +2,7 @@
   "name": "fusion",
   "displayName": "Fusion — multi-model orchestration for Claude",
   "description": "Adds “Fusion (multi model)” to the chat model picker. Each task is routed across Claude Haiku, Sonnet and Opus and run as a single call, a cascade with a quality gate, or a draft–critique–revise workflow.",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "publisher": "kylesau",
   "author": "Kyle Saunders",
   "license": "MIT",

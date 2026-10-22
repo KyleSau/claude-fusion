@@ -15,7 +15,14 @@ export function claudeCodeEnv(port: number): Record<string, string> {
 }
 
 const KEYS = Object.keys(claudeCodeEnv(0));
-const SETTING = 'claudeCode.environmentVariables';
+export const CLAUDE_CODE_ENV_SETTING = 'claudeCode.environmentVariables';
+const SETTING = CLAUDE_CODE_ENV_SETTING;
+
+/** Whether Claude Code in VS Code is set to send its requests to this gateway (so it must be running). */
+export function claudeCodeUsesGateway(port: number): boolean {
+  const entries = vscode.workspace.getConfiguration().get<EnvEntry[]>(SETTING) ?? [];
+  return entries.some((e) => e.name === 'ANTHROPIC_BASE_URL' && e.value.replace(/\/+$/, '') === claudeCodeEnv(port).ANTHROPIC_BASE_URL);
+}
 const settingsFile = () => path.join(os.homedir(), '.claude', 'settings.json');
 
 type EnvEntry = { name: string; value: string };

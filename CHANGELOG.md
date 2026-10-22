@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.1.1 — 2026-10-21
+
+- Gateway pass-through forwards the client's own headers (user agent, app and session ids, betas, auth) unchanged, so Claude Code's regular models behave exactly as without the gateway.
+- The extension keeps the gateway running whenever Claude Code in VS Code is configured to use it.
+- A missing API key is reported as a clear setup error instead of an authentication error that Claude Code would blame on its own login.
+
 ## 0.1.0 — 2026-10-21
 
 First release.

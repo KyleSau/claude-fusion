@@ -2,7 +2,8 @@ import { AsyncLocalStorage } from 'node:async_hooks';
 import http from 'node:http';
 import { Readable } from 'node:stream';
 import Anthropic from '@anthropic-ai/sdk';
-import type { AnthropicCredentials } from '../backends/anthropic';
+import { MissingCredentialsError, type AnthropicCredentials } from '../backends/anthropic';
+import { NoAvailableModelError } from '../core/policy';
 import { CancelledError, isCancellation, TimeoutError } from '../core/bounded';
 import type { Orchestrator, Logger } from '../core/orchestrator';
 import { errorMessage } from '../core/orchestrator';
@@ -231,13 +232,23 @@ export class Gateway {
     res.on('close', () => {
       if (!res.writableFinished) controller.abort();
     });
-    const creds = this.inbound(req);
-    const client = this.clientFor(creds.apiKey || creds.authToken ? creds : (this.opts.defaultCredentials() ?? {}));
-    const headers: Record<string, string> = {};
-    const beta = header(req, 'anthropic-beta');
-    if (beta) headers['anthropic-beta'] = beta;
-    const version = header(req, 'anthropic-version');
-    if (version) headers['anthropic-version'] = version;
+    // Forward the client's own headers (auth, betas, version, user agent, session ids) so the request
+    // reaches the API exactly as the client sent it; only connection-level headers are dropped.
+    const headers: Record<string, string | null> = {};
+    for (const [name, value] of Object.entries(req.headers)) {
+      if (value === undefined || NOT_FORWARDED.has(name)) continue;
+      const v = Array.isArray(value) ? value.join(', ') : value;
+      // A gateway token authenticates the client to Fusion; it is never an upstream credential.
+      if (this.opts.token && (name === 'x-api-key' || name === 'authorization') && (v === this.opts.token || v === `Bearer ${this.opts.token}`)) continue;
+      headers[name] = v;
+    }
+    const clientAuth = 'x-api-key' in headers || 'authorization' in headers;
+    if (clientAuth) {
+      // Make sure no other credential is added next to the client's own.
+      headers['x-api-key'] ??= null;
+      headers['authorization'] ??= null;
+    }
+    const client = this.clientFor(clientAuth ? {} : (this.opts.defaultCredentials() ?? {}));
     try {
       const upstream = await client
         .post(path.startsWith('/') ? path : `/${path}`, { body, headers, signal: controller.signal, stream: body.stream === true, maxRetries: 0 })
@@ -316,6 +327,22 @@ export class Gateway {
 
 const HOP_BY_HOP = new Set(['connection', 'keep-alive', 'transfer-encoding', 'content-length', 'content-encoding', 'upgrade', 'proxy-connection', 'te', 'trailer']);
 
+/** Request headers a proxy must not pass on: they describe the client's connection to the gateway. */
+const NOT_FORWARDED = new Set([
+  'host',
+  'connection',
+  'keep-alive',
+  'transfer-encoding',
+  'content-length',
+  'upgrade',
+  'proxy-connection',
+  'proxy-authorization',
+  'te',
+  'trailer',
+  'accept-encoding',
+  'x-fusion-token',
+]);
+
 function header(req: http.IncomingMessage, name: string): string | undefined {
   const v = req.headers[name];
   return Array.isArray(v) ? v.join(',') : v;
@@ -352,6 +379,10 @@ function sendError(res: http.ServerResponse, status: number, type: string, messa
 
 /** Upstream errors are forwarded unmodified: clients match on their wording to decide on retries. */
 export function errorPayload(err: unknown): { status: number; payload: unknown } {
+  if (err instanceof MissingCredentialsError || err instanceof NoAvailableModelError) {
+    // A setup problem: 400 so clients show the message instead of retrying or asking to log in again.
+    return { status: 400, payload: { type: 'error', error: { type: 'invalid_request_error', message: err.message } } };
+  }
   if (err instanceof Anthropic.APIError && err.error && typeof err.error === 'object') {
     const status = err.status ?? (err.type === 'overloaded_error' ? 529 : 500);
     return { status, payload: err.error };
