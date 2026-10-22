@@ -1,0 +1,257 @@
+{
+  "name": "fusion",
+  "displayName": "Fusion — multi-model orchestration for Claude",
+  "description": "Adds “Fusion (multi model)” to the chat model picker. Each task is routed across Claude Haiku, Sonnet and Opus and run as a single call, a cascade with a quality gate, or a draft–critique–revise workflow.",
+  "version": "0.1.0",
+  "publisher": "kylesau",
+  "author": "Kyle Saunders",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/KyleSau/fusion.git"
+  },
+  "homepage": "https://github.com/KyleSau/fusion#readme",
+  "bugs": {
+    "url": "https://github.com/KyleSau/fusion/issues"
+  },
+  "keywords": [
+    "claude",
+    "anthropic",
+    "llm",
+    "router",
+    "multi-model",
+    "orchestration",
+    "chat",
+    "claude-code"
+  ],
+  "categories": [
+    "AI",
+    "Chat"
+  ],
+  "icon": "media/icon.png",
+  "galleryBanner": {
+    "color": "#16182a",
+    "theme": "dark"
+  },
+  "engines": {
+    "vscode": "^1.104.0",
+    "node": ">=20"
+  },
+  "main": "./dist/extension.js",
+  "bin": {
+    "fusion": "dist/cli.js"
+  },
+  "files": [
+    "dist/extension.js",
+    "dist/cli.js",
+    "media/icon.png",
+    "README.md",
+    "CHANGELOG.md",
+    "LICENSE"
+  ],
+  "activationEvents": [
+    "onLanguageModelChat:fusion",
+    "onStartupFinished"
+  ],
+  "contributes": {
+    "languageModelChatProviders": [
+      {
+        "vendor": "fusion",
+        "displayName": "Fusion"
+      }
+    ],
+    "commands": [
+      {
+        "command": "fusion.menu",
+        "title": "Show Menu",
+        "category": "Fusion"
+      },
+      {
+        "command": "fusion.setApiKey",
+        "title": "Set Anthropic API Key",
+        "category": "Fusion"
+      },
+      {
+        "command": "fusion.clearApiKey",
+        "title": "Clear Anthropic API Key",
+        "category": "Fusion"
+      },
+      {
+        "command": "fusion.showLastTask",
+        "title": "Show Last Workflow",
+        "category": "Fusion"
+      },
+      {
+        "command": "fusion.showLog",
+        "title": "Show Log",
+        "category": "Fusion"
+      },
+      {
+        "command": "fusion.configureModels",
+        "title": "Choose Models for Each Tier",
+        "category": "Fusion"
+      },
+      {
+        "command": "fusion.startGateway",
+        "title": "Start Gateway (for Claude Code)",
+        "category": "Fusion"
+      },
+      {
+        "command": "fusion.stopGateway",
+        "title": "Stop Gateway",
+        "category": "Fusion"
+      },
+      {
+        "command": "fusion.setupClaudeCode",
+        "title": "Use Fusion in Claude Code…",
+        "category": "Fusion"
+      }
+    ],
+    "configuration": {
+      "title": "Fusion",
+      "properties": {
+        "fusion.objective": {
+          "type": "string",
+          "enum": [
+            "fast",
+            "balanced",
+            "quality"
+          ],
+          "enumDescriptions": [
+            "Prefer speed and cost: cheaper drafters, fewer reviews.",
+            "Frontier-level quality at the lowest expected cost (default).",
+            "Prefer quality: stronger drafters and more review."
+          ],
+          "default": "balanced",
+          "markdownDescription": "Objective for **Fusion (multi model)** and for the gateway's `fusion` model id. **Fusion Fast** and **Fusion Quality** always use their own objective."
+        },
+        "fusion.models.fast": {
+          "type": "string",
+          "default": "claude-haiku-5-5",
+          "markdownDescription": "Model for the fast tier. An Anthropic model id, or `vscode:<vendor>/<id>` for a model another VS Code extension provides (pick one with **Fusion: Choose Models for Each Tier**)."
+        },
+        "fusion.models.balanced": {
+          "type": "string",
+          "default": "claude-sonnet-5-5",
+          "markdownDescription": "Model for the balanced tier."
+        },
+        "fusion.models.frontier": {
+          "type": "string",
+          "default": "claude-opus-5-5",
+          "markdownDescription": "Model for the frontier tier (e.g. `claude-opus-5-5` or `claude-fable-5-1`)."
+        },
+        "fusion.models.critic": {
+          "type": "string",
+          "default": "",
+          "markdownDescription": "Preferred reviewer for the critique pattern. A model from a different family (for example one provided by another extension) gives the most independent review. Empty uses the policy's choice."
+        },
+        "fusion.router.mode": {
+          "type": "string",
+          "enum": [
+            "model",
+            "heuristic"
+          ],
+          "enumDescriptions": [
+            "A fast model classifies each new task (difficulty, signals, risk).",
+            "Route with keyword and shape heuristics only (no extra call)."
+          ],
+          "default": "model",
+          "description": "How Fusion classifies new tasks."
+        },
+        "fusion.forcePattern": {
+          "type": "string",
+          "enum": [
+            "auto",
+            "single",
+            "cascade",
+            "critique"
+          ],
+          "default": "auto",
+          "description": "Force one workflow for every task. Useful for comparing workflows; leave on auto otherwise."
+        },
+        "fusion.gate.threshold": {
+          "type": "number",
+          "default": 0.6,
+          "minimum": 0,
+          "maximum": 1,
+          "description": "Minimum judge confidence for a cascade draft to be accepted without escalation."
+        },
+        "fusion.cascade.maxDraftSteps": {
+          "type": "integer",
+          "default": 40,
+          "minimum": 1,
+          "description": "A cascade drafter that has not finished after this many tool-calling steps hands the task to the stronger model."
+        },
+        "fusion.budget.maxTaskUsd": {
+          "type": "number",
+          "default": 5,
+          "minimum": 0.01,
+          "description": "Per-task ceiling (USD) for optional legs: gate checks, reviews and escalations are skipped once a task has cost this much. Solver calls are never cut off."
+        },
+        "fusion.showSummary": {
+          "type": "boolean",
+          "default": true,
+          "description": "Append a one-line summary (workflow, calls, estimated cost) to each final answer."
+        },
+        "fusion.progressUpdates": {
+          "type": "boolean",
+          "default": true,
+          "description": "Show the model's short progress notes between tool calls (Opus 5.5 and Sonnet 5.5 return them as thinking summaries)."
+        },
+        "fusion.refusalFallback": {
+          "type": "boolean",
+          "default": true,
+          "description": "Opt Fusion's Opus and Sonnet calls into server-side refusal fallback, so a safety-classifier false positive is retried on another model instead of failing."
+        },
+        "fusion.maxInputTokens": {
+          "type": "integer",
+          "default": 200000,
+          "minimum": 16000,
+          "description": "Context window Fusion reports to VS Code. Larger windows delay history summarization but cost more per step (Haiku 5.5 is billed at a higher rate above 100K prompt tokens)."
+        },
+        "fusion.showVariants": {
+          "type": "boolean",
+          "default": true,
+          "description": "Also offer Fusion Fast and Fusion Quality in the model picker."
+        },
+        "fusion.gateway.autoStart": {
+          "type": "boolean",
+          "default": false,
+          "description": "Start the Anthropic-compatible gateway (used by Claude Code) when VS Code starts."
+        },
+        "fusion.gateway.port": {
+          "type": "integer",
+          "default": 4545,
+          "description": "Port for the gateway. It only listens on 127.0.0.1."
+        },
+        "fusion.anthropic.baseUrl": {
+          "type": "string",
+          "default": "",
+          "markdownDescription": "Advanced: alternative upstream for Anthropic API calls. Empty uses `https://api.anthropic.com`."
+        }
+      }
+    }
+  },
+  "scripts": {
+    "build": "node scripts/build.mjs",
+    "watch": "node scripts/build.mjs --watch",
+    "typecheck": "tsc -p .",
+    "test": "vitest run",
+    "check": "npm run typecheck && npm test",
+    "package": "node scripts/build.mjs --production && vsce package --no-dependencies",
+    "prepare": "node scripts/build.mjs",
+    "icon": "node scripts/icon.mjs"
+  },
+  "dependencies": {
+    "@anthropic-ai/sdk": "^1.1.0",
+    "zod": "^4.6.7"
+  },
+  "devDependencies": {
+    "@types/node": "^22.20.5",
+    "@types/vscode": "1.104.0",
+    "@vscode/vsce": "^4.0.0",
+    "esbuild": "^0.28.2",
+    "typescript": "^7.0.2",
+    "vitest": "^5.0.5"
+  }
+}
