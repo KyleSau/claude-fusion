@@ -4,6 +4,17 @@
 
 **Pick “Fusion (multi model)” in your model picker, and each task runs on the cheapest Claude workflow likely to get it right.**
 
+## Quick start
+
+1. **Install the extension.** Download the latest `fusion-<version>.vsix` from [Releases](../../releases) and run **Extensions: Install from VSIX…** in VS Code.
+2. **Set an API key.** Run **Fusion: Set Anthropic API Key** (Ctrl+Shift+P). Fusion needs its own pay-as-you-go API key from the [Claude Developer Platform](https://platform.claude.com), and its calls are billed to that account. A Claude subscription (the claude.ai login Claude Code uses) can't pay for Fusion's calls. Without a key, choosing Fusion shows an error saying so, and your other models keep working.
+3. **Add Fusion to Claude Code.** Run **Fusion: Use Fusion in Claude Code…**, choose **Claude Code in VS Code**, then reload the window (**Developer: Reload Window**). Reloading closes open Claude Code conversations; reopen them from Claude Code's history.
+4. **Pick Fusion.** Start a new Claude Code conversation and choose **Fusion (multi model)** in the model menu, or type `/model fusion`. In VS Code's own chat view, choose **Fusion (multi model)** in the model picker.
+
+To undo step 3, run **Fusion: Use Fusion in Claude Code…** → **Remove**.
+
+## What it does
+
 Fusion is a multi-model orchestrator for Claude. A fast router reads each new task and chooses between Claude Haiku 5.5, Sonnet 5.5 and Opus 5.5, and between three workflows: one model answering directly, a cheap draft checked by a quality gate, or a draft reviewed by an independent critic and revised once. You see one answer. Drafts that were rejected or revised never reach your chat.
 
 It works in two places:
@@ -46,7 +57,7 @@ Fusion · cascade · escalated to Sonnet 5.5: Claims tests pass but none were ru
 
 You need VS Code 1.104 or later with chat enabled, and an Anthropic API key. Fusion calls the Claude API with your key, so usage is billed to your API account.
 
-1. Download `fusion-<version>.vsix` from [Releases](../../releases), then run `code --install-extension fusion-0.1.0.vsix` (or use **Extensions → … → Install from VSIX**).
+1. Download `fusion-<version>.vsix` from [Releases](../../releases), then run `code --install-extension fusion-<version>.vsix` (or use **Extensions → … → Install from VSIX**).
 2. Run **Fusion: Set Anthropic API Key** from the command palette. The key is kept in VS Code's secret storage. If you skip this, Fusion asks for the key the first time you use it.
 3. In the chat view, open the model picker and choose **Fusion (multi model)**. **Fusion Fast** and **Fusion Quality** are also listed. If Fusion isn't listed, open **Manage Models** from the picker and enable it.
 
